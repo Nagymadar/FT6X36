@@ -21,7 +21,7 @@ void ISR_ATTR FT6X36::isr()
 }
 
 bool FT6X36::begin(uint8_t threshold)
-{
+{	
 	uint8_t vendorid = readRegister8(FT6X36_REG_PANEL_ID);
 	if (vendorid != FT6X36_VENDID){
 		Serial.print(F("Wrong vendor ID: 0x"));
@@ -98,7 +98,7 @@ void FT6X36::processTouch()
 			_points[_pointIdx] = point;
 			_pointIdx += 1;
 		}
-		if (!_dragMode && _points[0].aboutEqual(point) && millis() - _touchStartTime > 300)
+		if (!_dragMode && _points[0] == point && millis() - _touchStartTime > DRAG_TIME) // remark: Tpoint == operator has tolerance 
 		{
 			_dragMode = true;
 			fireEvent(point, TEvent::DragStart);
@@ -118,7 +118,7 @@ void FT6X36::processTouch()
 			fireEvent(point, TEvent::DragEnd);
 			_dragMode = false;
 		}
-		if (_points[0].aboutEqual(point) && _touchEndTime - _touchStartTime <= 300)
+		if (_points[0] == point && _touchEndTime - _touchStartTime <= DRAG_TIME) // remark: Tpoint == operator has tolerance 
 		{
 			fireEvent(point, TEvent::Tap);
 			_points[0] = {0, 0};
@@ -130,7 +130,7 @@ void FT6X36::processTouch()
 	}
 }
 
-void FT6X36::onInterrupt()
+void IRAM_ATTR FT6X36::onInterrupt()
 {
 	_isrCounter++;
 

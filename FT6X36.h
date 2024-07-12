@@ -2,6 +2,7 @@
 #define FT6X36_h
 #include <Arduino.h>
 #include <Wire.h>
+#include "tpoint.h"
 
 #ifdef ESP32
 #define ISR_ATTR IRAM_ATTR
@@ -11,6 +12,8 @@
 
 //#define I2C_DEBUG 1
 //#define FT6X36_DEBUG 1
+
+#define DRAG_TIME 200
 
 #define FT6X36_ADDR						0x38
 
@@ -50,17 +53,31 @@
 #define FT6X36_REG_PANEL_ID				0xA8
 #define FT6X36_REG_STATE				0xBC
 
+#define FT62XX_REG_MODE					0x00 //!< Device mode, either WORKING or FACTORY
+#define FT62XX_REG_CALIBRATE			0x02 //!< Calibrate mode
+#define FT62XX_REG_WORKMODE				0x00 //!< Work mode
+#define FT62XX_REG_FACTORYMODE			0x40 //!< Factory mode
+#define FT62XX_REG_THRESHHOLD			0x80 //!< Threshold for touch detection
+#define FT62XX_REG_POINTRATE			0x88 //!< Point rate
+#define FT62XX_REG_FIRMVERS				0xA6 //!< Firmware version
+#define FT62XX_REG_CHIPID				0xA3 //!< Chip selecting
+#define FT62XX_REG_VENDID				0xA8 //!< FocalTech's panel ID
+
 #define FT6X36_PMODE_ACTIVE				0x00
 #define FT6X36_PMODE_MONITOR			0x01
 #define FT6X36_PMODE_STANDBY			0x02
 #define FT6X36_PMODE_HIBERNATE			0x03
 
-#define FT6X36_VENDID					0x11
-#define FT6206_CHIPID					0x06
-#define FT6236_CHIPID					0x36
-#define FT6336_CHIPID					0x64
+#define FT6X36_VENDID					0x11 //!< FocalTech's panel ID
+#define FT6206_CHIPID					0x06 //!< Chip selecting
+#define FT6236_CHIPID					0x36 //!< Chip selecting
+#define FT6336_CHIPID					0x64 //!< Chip selecting
 
 #define FT6X36_DEFAULT_THRESHOLD		22
+
+// Mod by Örs Hunor Detre
+
+
 
 enum class TRawEvent
 {
@@ -82,18 +99,6 @@ enum class TEvent
 	DragEnd
 };
 
-struct TPoint
-{
-	uint16_t x;
-	uint16_t y;
-
-	bool aboutEqual(const TPoint point)
-	{
-		const uint8_t maxDeviation = 5;
-		return abs(x - point.x) <= maxDeviation && abs(y - point.y) <= maxDeviation;
-	}
-};
-
 class FT6X36
 {
 	static void isr();
@@ -106,14 +111,15 @@ public:
 	uint8_t touched();
 	void loop();
 	void processTouch();
+	void writeRegister8(uint8_t reg, uint8_t val);
+	uint8_t readRegister8(uint8_t reg);
+
 #ifdef FT6X36_DEBUG
 	void debugInfo();
 #endif
 private:
-	void onInterrupt();
+	void IRAM_ATTR onInterrupt();
 	void readData(void);
-	void writeRegister8(uint8_t reg, uint8_t val);
-	uint8_t readRegister8(uint8_t reg);
 	void fireEvent(TPoint point, TEvent e);
 
 	static FT6X36 * _instance;
@@ -125,7 +131,7 @@ private:
 	volatile uint8_t _isrCounter = 0;
 	
 	uint8_t _touches;
-	uint16_t _touchX[2], _touchY[2], _touchEvent[2];
+	int16_t _touchX[2], _touchY[2], _touchEvent[2];
 	TPoint _points[10];
 	uint8_t _pointIdx = 0;
 	unsigned long _touchStartTime = 0;
