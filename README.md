@@ -6,3 +6,4 @@ Only basic functionality is currently implemented. Has been tested only on ESP32
 
 ## Annotation
 The [Adafruit_FT6206_Library](https://github.com/adafruit/Adafruit_FT6206_Library) was used as a base for the FT6X36 library. Many things were added/improved/rewritten based on a datasheet for the controller.
+Mod by Nagymadar 2024.07.12
